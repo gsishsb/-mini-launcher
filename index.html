@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Mini Launcher</title>
+<style>
+:root { color-scheme: dark; --bg:#10131b; --card:#1b2130; --text:#f5f7ff; --muted:#a8b0c4; --accent:#7c9cff; }
+* { box-sizing:border-box; }
+body { margin:0; min-height:100vh; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:radial-gradient(circle at top,#273451 0,var(--bg) 52%); color:var(--text); padding:22px 16px 32px; }
+main { max-width:520px; margin:0 auto; }
+header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:8px 0 24px; }
+h1 { font-size:26px; margin:0; letter-spacing:-.6px; }
+.sub { color:var(--muted); margin-top:6px; font-size:14px; }
+.clock { color:var(--muted); font-variant-numeric:tabular-nums; }
+.section-title { font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:1.3px; margin:22px 2px 12px; }
+.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.app { border:1px solid #ffffff12; border-radius:18px; background:var(--card); padding:16px 8px 13px; text-align:center; color:inherit; text-decoration:none; min-width:0; box-shadow:0 8px 22px #0002; }
+.icon { width:52px; height:52px; margin:0 auto 9px; border-radius:16px; display:grid; place-items:center; font-size:27px; background:linear-gradient(145deg,#3b4b70,#252d41); }
+.name { display:block; font-size:13px; overflow-wrap:anywhere; }
+.remove { display:block; margin:7px auto 0; border:0; color:#ff9b9b; background:transparent; font-size:11px; }
+.panel { margin-top:24px; padding:16px; border:1px solid #ffffff12; border-radius:18px; background:#171c28; }
+label { display:block; font-size:13px; color:var(--muted); margin:10px 0 6px; }
+input { width:100%; padding:12px; color:var(--text); background:#0e121a; border:1px solid #343c50; border-radius:11px; font-size:15px; }
+button.primary { width:100%; border:0; border-radius:12px; padding:13px; margin-top:12px; color:#101523; background:var(--accent); font-size:15px; font-weight:700; }
+.note { color:var(--muted); font-size:12px; line-height:1.5; margin-top:12px; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><h1>Mini Launcher ✨</h1><div class="sub">Твои ссылки — в одном месте</div></div>
+  <div class="clock" id="clock">--:--</div>
+</header>
+<div class="section-title">Мои приложения</div>
+<div class="grid" id="apps"></div>
+<section class="panel">
+  <strong>➕ Добавить приложение</strong>
+  <label for="appName">Название</label>
+  <input id="appName" maxlength="30" placeholder="Например, YouTube">
+  <label for="appUrl">Ссылка</label>
+  <input id="appUrl" type="url" placeholder="https://example.com">
+  <label for="appEmoji">Эмодзи для иконки</label>
+  <input id="appEmoji" maxlength="4" value="🌐" placeholder="🌐">
+  <button class="primary" id="add">Добавить</button>
+  <div class="note">Демо-версия: ссылки сохраняются локально в этом браузере. Чтобы они синхронизировались между устройствами, понадобится база данных и сервер.</div>
+</section>
+</main>
+<script>
+const defaults = [
+ {name:"YouTube",url:"https://youtube.com",emoji:"▶️"},
+ {name:"Google",url:"https://google.com",emoji:"🔎"},
+ {name:"Telegram",url:"https://t.me",emoji:"✈️"},
+ {name:"Spotify",url:"https://open.spotify.com",emoji:"🎵"},
+ {name:"TikTok",url:"https://tiktok.com",emoji:"🎬"},
+ {name:"ChatGPT",url:"https://chatgpt.com",emoji:"🤖"}
+];
+const key = "miniLauncherAppsV1";
+let apps;
+try { apps = JSON.parse(localStorage.getItem(key)) || defaults; } catch { apps = defaults; }
+function save(){ localStorage.setItem(key, JSON.stringify(apps)); }
+function render(){
+ const root=document.getElementById("apps"); root.innerHTML="";
+ apps.forEach((a,i)=>{
+   const card=document.createElement("div"); card.className="app";
+   const link=document.createElement("a"); link.href=a.url; link.target="_blank"; link.rel="noopener"; link.className="app";
+   link.style.cssText="display:block;padding:0;border:0;background:transparent;box-shadow:none";
+   const icon=document.createElement("div"); icon.className="icon"; icon.textContent=a.emoji||"🌐";
+   const name=document.createElement("span"); name.className="name"; name.textContent=a.name;
+   link.append(icon,name); card.append(link);
+   const del=document.createElement("button"); del.className="remove"; del.textContent="Удалить";
+   del.onclick=()=>{apps.splice(i,1);save();render();}; card.append(del); root.append(card);
+ });
+}
+document.getElementById("add").onclick=()=>{
+ const name=document.getElementById("appName").value.trim();
+ let url=document.getElementById("appUrl").value.trim();
+ const emoji=document.getElementById("appEmoji").value.trim()||"🌐";
+ if(!name||!url){alert("Заполни название и ссылку.");return;}
+ if(!/^https?:\/\//i.test(url)){alert("Ссылка должна начинаться с https:// или http://");return;}
+ try { new URL(url); } catch { alert("Проверь ссылку."); return; }
+ apps.push({name,url,emoji}); save(); render();
+ document.getElementById("appName").value="";
+ document.getElementById("appUrl").value="";
+ document.getElementById("appEmoji").value="🌐";
+};
+function tick(){document.getElementById("clock").textContent=new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});}
+tick();setInterval(tick,15000);render();
+</script>
+</body>
+</html>
